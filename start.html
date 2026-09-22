@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Messdaten analysieren, Unsicherheiten vergleichen und lineare Zusammenhänge untersuchen.">
+  <title>Messdaten-Werkbank</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2305A535'/%3E%3Cpath d='M12 43h40M16 36l9-8 8 5 15-18' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Zum Inhalt</a>
+  <header class="site-header">
+    <img class="fnw-logo" src="https://www.cd.ovgu.de/cd_media/CD_OVGU/Fakult%C3%A4tsmerkmale%2BAbb_/Logo_Abbildungen/FNW/Signet_FNW_2-height-145-width-621.svg" alt="Logo der Fakultät für Naturwissenschaften" onerror="this.hidden=true">
+    <h1><span>Physikdidaktisches Werkzeug</span><b>–</b> Messdaten-Werkbank</h1>
+  </header>
+
+  <main id="workspace">
+    <section class="home-view active" id="view-home" aria-labelledby="home-heading">
+      <div class="home-heading">
+        <span class="step-label">Werkzeug auswählen</span>
+        <h2 id="home-heading">Was möchtest du untersuchen?</h2>
+      </div>
+      <div class="home-grid">
+        <a class="home-tile" href="#series">
+          <span class="tile-number">01</span>
+          <h3>Messreihe analysieren</h3>
+          <p>Streuung einer Messreihe mit verschiedenen Unsicherheitsmaßen bestimmen und vergleichen.</p>
+          <span class="tile-link">Werkzeug öffnen</span>
+        </a>
+        <a class="home-tile" href="#compare">
+          <span class="tile-number">02</span>
+          <h3>Messergebnisse vergleichen</h3>
+          <p>Zwei Bestwerte mit ihren Unsicherheitsintervallen gemeinsam darstellen.</p>
+          <span class="tile-link">Werkzeug öffnen</span>
+        </a>
+        <a class="home-tile" href="#linear">
+          <span class="tile-number">03</span>
+          <h3>Linearen Zusammenhang untersuchen</h3>
+          <p>Messpunkte, Unsicherheitsrechtecke, Theorie- und Grenzgeraden sichtbar machen.</p>
+          <span class="tile-link">Werkzeug öffnen</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="view" id="view-series" aria-labelledby="series-heading" hidden>
+      <div class="view-heading">
+        <div>
+          <a class="back-link" href="#home">← Übersicht</a>
+          <span class="step-label">Arbeitsbereich 1</span>
+          <h2 id="series-heading">Messreihe analysieren</h2>
+        </div>
+        <p>Messwerte eingeben, ein Unsicherheitsmaß wählen und die Wirkung direkt im Diagramm untersuchen.</p>
+      </div>
+
+      <section class="card data-card full-width-card">
+        <div class="card-heading">
+          <div><span class="card-kicker">Daten</span><h3>Messwerte</h3></div>
+          <div class="action-row compact">
+            <button class="button primary" id="series-example-button">Beispiel auswählen</button>
+            <label class="button secondary file-button">CSV/TXT öffnen<input id="series-file" type="file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
+            <button class="button ghost collapse-toggle" data-collapse-target="series-data-content" aria-expanded="true">Daten einklappen</button>
+          </div>
+        </div>
+        <div id="series-data-content" class="collapsible-content">
+          <div class="meta-grid three">
+            <label>Messgröße<input id="series-name" placeholder="z. B. Periodendauer"></label>
+            <label>Formelzeichen<input id="series-symbol" placeholder="z. B. T"></label>
+            <label>Einheit<input id="series-unit" placeholder="z. B. s"></label>
+          </div>
+          <label class="input-label" for="series-paste">Werte einfügen</label>
+          <textarea id="series-paste" rows="3" spellcheck="false" placeholder="z. B. 2,03; 2,08; 2,01; 2,05"></textarea>
+          <div class="under-input">
+            <span>Komma oder Punkt als Dezimalzeichen; Trennung durch Zeilen, Tabulator oder Semikolon.</span>
+            <button class="button primary" id="series-apply">Werte übernehmen</button>
+          </div>
+          <div id="series-import-map" class="import-map" hidden>
+            <label>Zu analysierende Spalte<select id="series-column"></select></label>
+            <button class="button primary" id="series-use-column">Spalte übernehmen</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nr.</th><th id="series-table-heading">Messwert</th><th class="manual-column">Manuell ausschließen</th><th><span class="sr-only">Zeile löschen</span></th></tr></thead>
+              <tbody id="series-table"></tbody>
+            </table>
+          </div>
+          <button class="text-button" id="series-add-row">+ Messwert ergänzen</button>
+        </div>
+      </section>
+
+      <div class="workbench-grid">
+        <section class="card chart-card">
+          <div class="card-heading">
+            <div><span class="card-kicker">Darstellung</span><h3 id="series-chart-title">Messreihe</h3></div>
+            <div class="action-row compact"><button class="button secondary" id="series-png">PNG</button><button class="button secondary" id="series-csv">CSV</button></div>
+          </div>
+          <svg id="series-chart" class="chart" viewBox="0 0 1000 420" role="img" aria-labelledby="series-chart-title"></svg>
+          <p class="chart-hint">Punkt anklicken, um ihn manuell auszuschließen oder wieder einzubeziehen.</p>
+          <div class="legend"><span><i class="dot included"></i>verwendet</span><span><i class="dot excluded"></i>ausgeschlossen</span><span><i class="line mean"></i>Mittelwert</span><span><i class="line interval"></i>Unsicherheitsintervall</span></div>
+        </section>
+
+        <aside class="card control-card">
+          <div class="card-heading"><div><span class="card-kicker">Werkzeug</span><h3>Unsicherheit bestimmen</h3></div></div>
+          <div class="method-list" id="method-list" role="radiogroup" aria-label="Unsicherheitsmaß">
+            <button class="method-button active" data-method="max" role="radio" aria-checked="true"><span>Maximalabstand</span><span class="help-dot" data-help="max" aria-label="Hilfe zum Maximalabstand">?</span></button>
+            <button class="method-button" data-method="extreme" role="radio" aria-checked="false"><span>Extremwerte ausschließen</span><span class="help-dot" data-help="extreme" aria-label="Hilfe zum Ausschließen von Extremwerten">?</span></button>
+            <button class="method-button" data-method="middle" role="radio" aria-checked="false"><span>Mittlerer Anteil</span><span class="help-dot" data-help="middle" aria-label="Hilfe zum mittleren Anteil">?</span></button>
+            <button class="method-button" data-method="mad" role="radio" aria-checked="false"><span>Mittlere absolute Abweichung</span><span class="help-dot" data-help="mad" aria-label="Hilfe zur mittleren absoluten Abweichung">?</span></button>
+            <button class="method-button" data-method="sd" role="radio" aria-checked="false"><span>Standardabweichung</span><span class="help-dot" data-help="sd" aria-label="Hilfe zur Standardabweichung">?</span></button>
+            <button class="method-button" data-method="known" role="radio" aria-checked="false"><span>Bekannte Unsicherheit</span><span class="help-dot" data-help="known" aria-label="Hilfe zur bekannten Unsicherheit">?</span></button>
+          </div>
+          <div class="method-options" id="extreme-options" hidden>
+            <span class="input-label">Auswahl</span>
+            <label class="choice"><input type="radio" name="extreme-mode" value="auto" checked> Kleinsten und größten Wert automatisch ausschließen</label>
+            <label class="choice"><input type="radio" name="extreme-mode" value="manual"> Im Diagramm oder in der Tabelle markieren</label>
+          </div>
+          <div class="method-options" id="middle-options" hidden>
+            <label>Anteil der mittleren Werte <output id="middle-output">50 %</output><input id="middle-percent" type="range" min="20" max="100" value="50" step="1"></label>
+          </div>
+          <div class="method-options" id="known-options" hidden>
+            <label>Bekannte Unsicherheit<input id="known-uncertainty" type="text" inputmode="decimal" placeholder="0,00"></label>
+            <input id="known-uncertainty-range" type="range" min="0" max="10" value="0" step="0.01" aria-label="Bekannte Unsicherheit einstellen">
+          </div>
+          <div class="result-panel" aria-live="polite">
+            <span class="result-label">Gerundetes Messergebnis</span>
+            <strong id="series-result">Noch keine Messwerte</strong>
+            <dl class="metric-list">
+              <div><dt>Mittelwert, exakt</dt><dd id="series-mean">–</dd></div>
+              <div><dt>Unsicherheit, exakt</dt><dd id="series-uncertainty">–</dd></div>
+              <div><dt>Verwendete Werte</dt><dd id="series-used">–</dd></div>
+            </dl>
+          </div>
+          <button class="button full" id="compare-methods">Alle Verfahren vergleichen</button>
+        </aside>
+      </div>
+
+      <section class="card comparison-card" id="method-comparison" hidden>
+        <div class="card-heading"><div><span class="card-kicker">Vergleich</span><h3>Alle Unsicherheitsmaße</h3></div><button class="icon-button" id="close-method-comparison" aria-label="Vergleich schließen">×</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Verfahren</th><th>Unsicherheit, exakt</th><th>Gerundetes Messergebnis</th></tr></thead><tbody id="method-comparison-body"></tbody></table></div>
+      </section>
+    </section>
+
+    <section class="view" id="view-compare" aria-labelledby="compare-heading" hidden>
+      <div class="view-heading">
+        <div><a class="back-link" href="#home">← Übersicht</a><span class="step-label">Arbeitsbereich 2</span><h2 id="compare-heading">Messergebnisse vergleichen</h2></div>
+        <div class="heading-actions"><p>Zwei Werte mit ihren Unsicherheitsintervallen darstellen. Die fachliche Deutung bleibt bei dir.</p><button class="button primary" id="compare-example-button">Beispiel auswählen</button></div>
+      </div>
+      <div class="two-column">
+        <section class="card result-input result-a">
+          <div class="card-heading"><div><span class="card-kicker">Ergebnis A</span><h3>Erstes Messergebnis</h3></div><button class="button ghost use-series" data-target="a">Aktuelle Messreihe übernehmen</button></div>
+          <div class="meta-grid three"><label>Bezeichnung<input id="compare-a-label" placeholder="z. B. Pendel A"></label><label>Formelzeichen<input id="compare-a-symbol" placeholder="z. B. T₁"></label><label>Einheit<input id="compare-a-unit" placeholder="z. B. s"></label></div>
+          <div class="slider-field"><label>Bestwert<input id="compare-a-value" type="text" inputmode="decimal" placeholder="0,00"></label><input id="compare-a-value-range" type="range" min="-100" max="100" value="0" step="0.1" aria-label="Bestwert A einstellen"></div>
+          <div class="slider-field"><label>Unsicherheit<input id="compare-a-u" type="text" inputmode="decimal" placeholder="0,00"></label><input id="compare-a-u-range" type="range" min="0" max="50" value="0" step="0.1" aria-label="Unsicherheit A einstellen"></div>
+        </section>
+        <section class="card result-input result-b">
+          <div class="card-heading"><div><span class="card-kicker">Ergebnis B</span><h3>Zweites Messergebnis</h3></div><button class="button ghost use-series" data-target="b">Aktuelle Messreihe übernehmen</button></div>
+          <div class="meta-grid three"><label>Bezeichnung<input id="compare-b-label" placeholder="z. B. Pendel B"></label><label>Formelzeichen<input id="compare-b-symbol" placeholder="z. B. T₂"></label><label>Einheit<input id="compare-b-unit" placeholder="z. B. s"></label></div>
+          <div class="slider-field"><label>Bestwert<input id="compare-b-value" type="text" inputmode="decimal" placeholder="0,00"></label><input id="compare-b-value-range" type="range" min="-100" max="100" value="0" step="0.1" aria-label="Bestwert B einstellen"></div>
+          <div class="slider-field"><label>Unsicherheit<input id="compare-b-u" type="text" inputmode="decimal" placeholder="0,00"></label><input id="compare-b-u-range" type="range" min="0" max="50" value="0" step="0.1" aria-label="Unsicherheit B einstellen"></div>
+        </section>
+      </div>
+      <section class="card chart-card">
+        <div class="card-heading"><div><span class="card-kicker">Darstellung</span><h3>Unsicherheitsintervalle</h3></div><button class="button secondary" id="compare-png">Diagramm als PNG</button></div>
+        <svg id="compare-chart" class="chart compare-chart" viewBox="0 0 1000 360" role="img" aria-label="Vergleich zweier Unsicherheitsintervalle"></svg>
+        <div class="result-equations"><strong id="compare-a-result">–</strong><strong id="compare-b-result">–</strong></div>
+      </section>
+    </section>
+
+    <section class="view" id="view-linear" aria-labelledby="linear-heading" hidden>
+      <div class="view-heading">
+        <div><a class="back-link" href="#home">← Übersicht</a><span class="step-label">Arbeitsbereich 3</span><h2 id="linear-heading">Linearen Zusammenhang untersuchen</h2></div>
+        <p>Messpunkte mit konstanten x- und y-Unsicherheiten, Theoriegerade und automatisch konstruierten Grenzgeraden.</p>
+      </div>
+
+      <section class="card data-card full-width-card">
+        <div class="card-heading">
+          <div><span class="card-kicker">Datenpaare</span><h3>x- und y-Werte</h3></div>
+          <div class="action-row compact"><button class="button primary" id="linear-example-button">Beispiel auswählen</button><label class="button secondary file-button">CSV/TXT öffnen<input id="linear-file" type="file" accept=".csv,.txt,text/csv,text/plain" hidden></label><button class="button ghost collapse-toggle" data-collapse-target="linear-data-content" aria-expanded="true">Daten einklappen</button></div>
+        </div>
+        <div id="linear-data-content" class="collapsible-content">
+          <div class="axis-meta">
+            <fieldset><legend>x-Achse</legend><div class="meta-grid three"><label>Messgröße<input id="x-name" placeholder="z. B. Spannung"></label><label>Formelzeichen<input id="x-symbol" placeholder="z. B. U"></label><label>Einheit<input id="x-unit" placeholder="z. B. V"></label></div></fieldset>
+            <fieldset><legend>y-Achse</legend><div class="meta-grid three"><label>Messgröße<input id="y-name" placeholder="z. B. Stromstärke"></label><label>Formelzeichen<input id="y-symbol" placeholder="z. B. I"></label><label>Einheit<input id="y-unit" placeholder="z. B. mA"></label></div></fieldset>
+          </div>
+          <label class="input-label" for="linear-paste">Datenpaare einfügen</label>
+          <textarea id="linear-paste" rows="5" spellcheck="false" placeholder="0,5&#9;5,2&#10;1,0&#9;10,4&#10;1,5&#9;15,1"></textarea>
+          <div class="under-input"><span>Pro Zeile ein Wertepaar; Spalten mit Tabulator, Semikolon oder Leerzeichen trennen.</span><button class="button primary" id="linear-apply">Werte übernehmen</button></div>
+          <div id="linear-import-map" class="import-map" hidden>
+            <label>x-Spalte<select id="linear-x-column"></select></label><label>y-Spalte<select id="linear-y-column"></select></label><button class="button primary" id="linear-use-columns">Spalten übernehmen</button>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>Nr.</th><th id="x-table-heading">x-Wert</th><th id="y-table-heading">y-Wert</th><th><span class="sr-only">Zeile löschen</span></th></tr></thead><tbody id="linear-table"></tbody></table></div>
+          <button class="text-button" id="linear-add-row">+ Datenpaar ergänzen</button>
+        </div>
+      </section>
+
+      <div class="workbench-grid linear-workbench">
+        <section class="card chart-card">
+          <div class="card-heading"><div><span class="card-kicker">Diagramm</span><h3 id="linear-chart-title">Linearer Zusammenhang</h3></div><div class="action-row compact"><button class="button secondary" id="linear-png">PNG</button><button class="button secondary" id="linear-csv">CSV</button></div></div>
+          <svg id="linear-chart" class="chart linear-chart" viewBox="0 0 1000 620" role="img" aria-labelledby="linear-chart-title"></svg>
+          <div class="legend"><span><i class="rect-key"></i>Unsicherheitsbereich</span><span><i class="line theory"></i>Theorie</span><span><i class="line bounds"></i>Grenzgeraden</span><span><i class="line fit"></i>Winkelhalbierende</span></div>
+        </section>
+
+        <aside class="card control-card">
+          <div class="card-heading"><div><span class="card-kicker">Darstellung</span><h3>Unsicherheiten und Geraden</h3></div></div>
+          <div class="slider-field"><label>x-Unsicherheit<input id="x-uncertainty" type="text" inputmode="decimal" placeholder="0,00"></label><input id="x-uncertainty-range" type="range" min="0" max="10" value="0" step="0.01" aria-label="x-Unsicherheit einstellen"></div>
+          <div class="slider-field"><label>y-Unsicherheit<input id="y-uncertainty" type="text" inputmode="decimal" placeholder="0,00"></label><input id="y-uncertainty-range" type="range" min="0" max="10" value="0" step="0.01" aria-label="y-Unsicherheit einstellen"></div>
+          <div class="section-rule"></div>
+          <div class="subheading-row"><h4>Lineare Theorie</h4><button class="help-dot" data-help="theory" aria-label="Hilfe zur Theoriegeraden">?</button></div>
+          <div class="formula-box"><span id="theory-formula">y = a · x + b</span></div>
+          <div class="slider-field"><label>Steigung a<input id="theory-a" type="text" inputmode="decimal" placeholder="0,0"></label><input id="theory-a-range" type="range" min="-20" max="20" value="0" step="0.1" aria-label="Steigung einstellen"></div>
+          <div class="slider-field"><label>Achsenabschnitt b<input id="theory-b" type="text" inputmode="decimal" placeholder="0,0"></label><input id="theory-b-range" type="range" min="-50" max="50" value="0" step="0.1" aria-label="Achsenabschnitt einstellen"></div>
+          <div class="line-toggles">
+            <label class="choice"><input id="show-theory" type="checkbox" checked> Theoriegerade</label>
+            <label class="choice"><input id="show-bounds" type="checkbox" checked> Grenzgeraden</label>
+            <label class="choice"><input id="show-fit" type="checkbox" checked> Winkelhalbierende</label>
+          </div>
+          <div class="result-panel line-result" aria-live="polite">
+            <span class="result-label">Automatisch konstruiert</span>
+            <dl class="metric-list"><div><dt>Minimale Steigung</dt><dd id="slope-min">–</dd></div><div><dt>Maximale Steigung</dt><dd id="slope-max">–</dd></div><div><dt>Winkelhalbierende</dt><dd id="fit-equation">–</dd></div></dl>
+            <p class="neutral-note" id="line-note">Mindestens zwei Datenpaare eingeben.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer><span>Messdaten-Werkbank · vollständig lokale Datenverarbeitung im Browser</span><span>Linus von Au · Lukas Mientus</span></footer>
+
+  <dialog id="example-dialog"><form method="dialog" class="dialog-card"><div class="card-heading"><div><span class="card-kicker">Datensatz laden</span><h3 id="example-title">Beispiele</h3></div><button class="icon-button" value="cancel" aria-label="Dialog schließen">×</button></div><div id="example-options" class="example-grid"></div></form></dialog>
+  <dialog id="help-dialog"><form method="dialog" class="dialog-card help-card"><div class="card-heading"><div><span class="card-kicker">Kurz erklärt</span><h3 id="help-title">Hilfe</h3></div><button class="icon-button" value="cancel" aria-label="Dialog schließen">×</button></div><div id="help-content"></div><button class="button primary" value="ok">Verstanden</button></form></dialog>
+  <dialog id="random-dialog"><form method="dialog" class="dialog-card"><div class="card-heading"><div><span class="card-kicker">Freie Zufallsdaten</span><h3 id="random-title">Datensatz erzeugen</h3></div><button class="icon-button" value="cancel" aria-label="Dialog schließen">×</button></div><div id="random-fields"></div><button class="button primary" id="random-generate" value="default">Daten erzeugen</button></form></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="assets/app.js"></script>
+</body>
+</html>
