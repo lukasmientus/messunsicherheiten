@@ -13,6 +13,7 @@
     seriesImport: null,
     linearImport: null,
     linear: [],
+    linearExcluded: new Set(),
     currentSeriesResult: null,
     currentLineResult: null,
     randomMode: 'series'
@@ -20,16 +21,16 @@
 
   const help = {
     max: ['Maximalabstand', 'Der größte Abstand eines Messwerts vom Mittelwert wird als Unsicherheit verwendet. Das Verfahren ist leicht zugänglich, reagiert aber stark auf einzelne Ausreißer.'],
-    extreme: ['Extremwerte ausschließen', 'Der Mittelwert wird aus allen Werten berechnet. Für die Unsicherheit werden der kleinste und der größte Wert oder selbst markierte Werte nicht berücksichtigt; anschließend gilt wieder der Maximalabstand.'],
-    middle: ['Mittlerer Anteil', 'Extremwertpaare werden schrittweise entfernt, solange mindestens der gewählte Anteil der Messwerte übrig bleibt. Die Unsicherheit ist der größte Abstand der verbleibenden Werte vom Mittelwert aller Messungen.'],
+    extreme: ['Extremwerte ausschließen', 'Der kleinste und der größte Messwert oder selbst markierte Werte werden ausgeschlossen. Aus den verbleibenden Messwerten wird der Mittelwert neu berechnet. Die Unsicherheit entspricht anschließend dem größten Abstand eines verbleibenden Messwerts von diesem Mittelwert.'],
+    middle: ['Mittlerer Anteil', 'Extremwertpaare werden schrittweise entfernt, solange mindestens der gewählte Anteil der Messwerte übrig bleibt. Aus den verbleibenden Messwerten wird der Mittelwert neu berechnet. Die Unsicherheit entspricht dem größten Abstand eines verbleibenden Messwerts von diesem Mittelwert.'],
     mad: ['Mittlere absolute Abweichung', 'Für jeden Messwert wird der absolute Abstand vom Mittelwert bestimmt. Der Mittelwert dieser Abstände ist die mittlere absolute Abweichung (MAD).'],
-    sd: ['Standardabweichung', 'Die quadrierten Abstände vom Mittelwert werden gemittelt und daraus die Wurzel gezogen. Hier wird – wie im zugrunde liegenden Kapitel – durch N und nicht durch N−1 geteilt.'],
+    sd: ['Standardabweichung', 'Die quadrierten Abstände vom Mittelwert werden gemittelt und daraus die Wurzel gezogen. Hier wird durch N und nicht durch N−1 geteilt.'],
     known: ['Bekannte Unsicherheit', 'Eine bereits bekannte Unsicherheit, zum Beispiel eine Ableseunsicherheit, wird direkt verwendet. Sie gilt als gleicher Betrag nach oben und unten.'],
     theory: ['Theorie- und Grenzgeraden', 'Die Theoriegerade folgt y = a·x + b. Die Grenzgeraden besitzen die kleinste bzw. größte Steigung, mit der noch alle Unsicherheitsrechtecke geschnitten werden können. Die Winkelhalbierende liegt zwischen ihren Richtungswinkeln.']
   };
 
   const seriesExamples = [
-    { id: 'pendulum', title: 'Pendelmessung aus dem Kapitel', text: 'Acht Messungen der Periodendauer; Vergleich mit den veröffentlichten Beispielwerten.' },
+    { id: 'pendulum', title: 'Pendelmessung', text: 'Acht Messungen der Periodendauer; Vergleich mit den veröffentlichten Beispielwerten.' },
     { id: 'outlier', title: 'Messreihe mit Ausreißer', text: 'Macht die unterschiedliche Empfindlichkeit der Verfahren sichtbar.' },
     { id: 'length', title: 'Längenmessung', text: 'Zehn eng streuende Messwerte in Zentimetern.' },
     { id: 'random', title: 'Freie Zufallsdaten', text: 'Anzahl, Mittelwert und Streuung selbst festlegen.' }
@@ -194,34 +195,81 @@
   function seriesMethod(method = state.method) {
     const values = state.series.filter(Number.isFinite);
     if (!values.length) return null;
-    const center = mean(values);
+    let center = mean(values);
     let used = values.map((_, index) => index);
     let uncertainty = 0;
     if (method === 'extreme') {
       const manual = state.extremeMode === 'manual';
-      if (manual) used = used.filter(index => !state.excluded.has(index));
-      else if (values.length > 2) {
+      if (manual) {
+        used = used.filter(index => !state.excluded.has(index));
+      } else if (values.length > 2) {
         const minIndex = values.indexOf(Math.min(...values));
         const maxIndex = values.lastIndexOf(Math.max(...values));
-        used = used.filter(index => index !== minIndex && index !== maxIndex);
+        used = used.filter(
+          index => index !== minIndex && index !== maxIndex
+        );
       }
-      uncertainty = used.length ? Math.max(...used.map(index => Math.abs(values[index] - center))) : NaN;
+      if (used.length) {
+        const usedValues = used.map(index => values[index]);
+        center = mean(usedValues);
+        uncertainty = Math.max(
+          ...usedValues.map(value => Math.abs(value - center))
+        );
+      } else {
+        center = NaN;
+        uncertainty = NaN;
+      }
     } else if (method === 'middle') {
-      const fraction = Number($('#middle-percent').value) / 100;
-      used = values.map((value, index) => ({ value, index })).sort((a, b) => a.value - b.value);
-      while (used.length > 2 && used.length - 2 >= values.length * fraction - 1e-10) used = used.slice(1, -1);
+      const fraction =
+      Number($('#middle-percent').value) / 100;
+      used = values
+      .map((value, index) => ({ value, index }))
+      .sort((a, b) => a.value - b.value);
+      while (
+        used.length > 2 &&
+        used.length - 2 >= values.length * fraction - 1e-10
+      ) {
+        used = used.slice(1, -1);
+      }
       used = used.map(item => item.index);
-      uncertainty = Math.max(...used.map(index => Math.abs(values[index] - center)));
+      if (used.length) {
+        const usedValues = used.map(index => values[index]);
+        center = mean(usedValues);
+        uncertainty = Math.max(
+          ...usedValues.map(value => Math.abs(value - center))
+        );
+      } else {
+        center = NaN;
+        uncertainty = NaN;
+      }
     } else if (method === 'mad') {
-      uncertainty = values.reduce((sum, value) => sum + Math.abs(value - center), 0) / values.length;
+      uncertainty =
+      values.reduce(
+        (sum, value) => sum + Math.abs(value - center),
+        0
+      ) / values.length;
     } else if (method === 'sd') {
-      uncertainty = Math.sqrt(values.reduce((sum, value) => sum + (value - center) ** 2, 0) / values.length);
+      uncertainty = Math.sqrt(
+        values.reduce(
+          (sum, value) => sum + (value - center) ** 2,
+          0
+        ) / values.length
+      );
     } else if (method === 'known') {
-      uncertainty = Math.abs(parseNumber($('#known-uncertainty').value));
+      uncertainty =
+      Math.abs(parseNumber($('#known-uncertainty').value));
     } else {
-      uncertainty = Math.max(...values.map(value => Math.abs(value - center)));
+      uncertainty = Math.max(
+        ...values.map(value => Math.abs(value - center))
+      );
     }
-    return { values, center, uncertainty, used, excluded: values.map((_, i) => !used.includes(i)) };
+    return {
+      values,
+      center,
+      uncertainty,
+      used,
+      excluded: values.map((_, i) => !used.includes(i))
+    };
   }
 
   function renderSeriesTable() {
@@ -432,24 +480,59 @@
     }));
     items.forEach(item => { $(`#compare-${item.id}-result`).textContent = Number.isFinite(item.value) && Number.isFinite(item.u) ? measurementText(item.symbol, item.unit, item.value, item.u) : '–'; });
     const valid = items.filter(item => Number.isFinite(item.value) && Number.isFinite(item.u));
+    const reference = parseNumber($('#compare-reference').value);
     const svg = $('#compare-chart'); clearSvg(svg);
     if (valid.length < 2) {
       drawEmptyChart(svg, 'Noch keine vollständigen Ergebnisse', 'Beide Bestwerte und Unsicherheiten eingeben oder ein Beispiel auswählen.', 360);
       return;
     }
     const W = 1000, left = 180, right = 45;
-    let min = Math.min(...valid.map(item => item.value - item.u)); let max = Math.max(...valid.map(item => item.value + item.u));
+    let min = Math.min(...valid.map(item => item.value - item.u));
+    let max = Math.max(...valid.map(item => item.value + item.u));
+    if (Number.isFinite(reference)) {
+      min = Math.min(min, reference);
+      max = Math.max(max, reference);
+    }
     const rawSpan = max - min || Math.abs(max) * .1 || 1; min -= rawSpan * .14; max += rawSpan * .14;
     const span = max - min; const x = value => left + (value - min) / span * (W - left - right);
     svg.append(svgEl('rect', { width: W, height: 360, fill: '#fcfdfc' }));
+
+    const overlapStart = Math.max(valid[0].value - valid[0].u, valid[1].value - valid[1].u);
+    const overlapEnd = Math.min(valid[0].value + valid[0].u, valid[1].value + valid[1].u);
+    if (overlapStart <= overlapEnd) {
+      const ox1 = x(overlapStart), ox2 = x(overlapEnd);
+      svg.append(svgEl('rect', {
+        x: ox1, y: 58, width: Math.max(ox2 - ox1, 2), height: 196,
+        fill: 'rgba(5,165,53,.14)', stroke: '#05a535', 'stroke-width': 1.5
+      }));
+      svg.append(svgEl('text', {
+        x: (ox1 + ox2) / 2, y: 49, 'text-anchor': 'middle',
+        fill: '#08752b', 'font-size': 16, 'font-weight': 600
+      }, 'Überschneidung'));
+    }
+
+    if (Number.isFinite(reference)) {
+      const rx = x(reference);
+      svg.append(svgEl('line', {
+        x1: rx, y1: 32, x2: rx, y2: 285,
+        stroke: '#172019', 'stroke-width': 3, 'stroke-dasharray': '8 6'
+      }));
+      svg.append(svgEl('text', {
+        x: rx, y: 24, 'text-anchor': 'middle',
+        fill: '#172019', 'font-size': 16, 'font-weight': 600
+      }, 'Literaturwert / Referenzwert'));
+    }
+
     const axisY = 285; svg.append(svgEl('line', { x1: left, y1: axisY, x2: W - right, y2: axisY, stroke: '#667269', 'stroke-width': 2 }));
     niceTicks(min, max).forEach(tick => { const px = x(tick); svg.append(svgEl('line', { x1: px, y1: axisY - 6, x2: px, y2: axisY + 6, stroke: '#667269' })); svg.append(svgEl('text', { x: px, y: axisY + 28, 'text-anchor': 'middle', fill: '#4f5b53', 'font-size': 17 }, formatNumber(tick, 6))); });
     valid.forEach((item, i) => {
-      const y = 95 + i * 105, color = i ? '#e87524' : '#245f99', lo = x(item.value - item.u), hi = x(item.value + item.u), mid = x(item.value);
+      const y = 105 + i * 105, color = i ? '#e87524' : '#245f99', lo = x(item.value - item.u), hi = x(item.value + item.u), mid = x(item.value);
       svg.append(svgEl('text', { x: left - 18, y: y + 6, 'text-anchor': 'end', fill: '#172019', 'font-size': 20, 'font-weight': 600 }, item.label));
       svg.append(svgEl('line', { x1: lo, y1: y, x2: hi, y2: y, stroke: color, 'stroke-width': 10, 'stroke-linecap': 'round' }));
       [lo, hi].forEach(px => svg.append(svgEl('line', { x1: px, y1: y - 18, x2: px, y2: y + 18, stroke: color, 'stroke-width': 4 })));
       svg.append(svgEl('circle', { cx: mid, cy: y, r: 10, fill: '#fff', stroke: color, 'stroke-width': 5 }));
+      svg.append(svgEl('text', { x: mid, y: y - 26, 'text-anchor': 'middle', fill: color, 'font-size': 15, 'font-weight': 600 }, 'Bestwert'));
+      svg.append(svgEl('text', { x: (lo + hi) / 2, y: y + 38, 'text-anchor': 'middle', fill: color, 'font-size': 15 }, 'Unsicherheitsintervall'));
     });
     const commonUnit = valid[0].unit === valid[1].unit ? valid[0].unit : '';
     svg.append(svgEl('text', { x: (left + W - right) / 2, y: 348, 'text-anchor': 'middle', fill: '#172019', 'font-size': 19, 'font-weight': 600 }, commonUnit ? `Messwert (in ${commonUnit})` : 'Messwert'));
@@ -462,7 +545,11 @@
       row.innerHTML = `<td>${index + 1}</td><td><input type="text" inputmode="decimal" value="${formatNumber(pair[0])}" aria-label="x-Wert ${index + 1}"></td><td><input type="text" inputmode="decimal" value="${formatNumber(pair[1])}" aria-label="y-Wert ${index + 1}"></td><td><button class="delete-row" aria-label="Datenpaar ${index + 1} löschen">×</button></td>`;
       const inputs = $$('input', row);
       inputs.forEach((input, coordinate) => input.addEventListener('change', () => { const value = parseNumber(input.value); if (Number.isFinite(value)) state.linear[index][coordinate] = value; renderLinear(); }));
-      $('.delete-row', row).addEventListener('click', () => { state.linear.splice(index, 1); renderLinearTable(); renderLinear(); });
+      $('.delete-row', row).addEventListener('click', () => {
+        state.linear.splice(index, 1);
+        state.linearExcluded = new Set([...state.linearExcluded].filter(i => i !== index).map(i => i > index ? i - 1 : i));
+        renderLinearTable(); renderLinear();
+      });
       body.appendChild(row);
     });
   }
@@ -485,7 +572,8 @@
     const xMean = mean(xs), yMean = mean(ys);
     const denom = points.reduce((sum, p) => sum + (p[0] - xMean) ** 2, 0);
     const ols = denom ? points.reduce((sum, p) => sum + (p[0] - xMean) * (p[1] - yMean), 0) / denom : 0;
-    let limit = Math.max(1, Math.abs(ols), Math.abs(theorySlope), (yr + 2 * uy) / Math.max(xr - 2 * ux, xr * .05, 1e-6)) * 24;
+    const theoryScale = Number.isFinite(theorySlope) ? Math.abs(theorySlope) : 0;
+    let limit = Math.max(1, Math.abs(ols), theoryScale, (yr + 2 * uy) / Math.max(xr - 2 * ux, xr * .05, 1e-6)) * 24;
     let samples, feasibleIndices;
     for (let attempt = 0; attempt < 4; attempt++) {
       const count = 16000;
@@ -509,12 +597,22 @@
     const minSlope = first === 0 ? samples[0] : refine(samples[first - 1], samples[first]);
     const maxSlope = last === samples.length - 1 ? samples.at(-1) : refineMax(samples[last], samples[last + 1]);
     const minRange = feasibleIntercept(points, ux, uy, minSlope), maxRange = feasibleIntercept(points, ux, uy, maxSlope);
+    const minLine = { a: minSlope, b: (minRange.lower + minRange.upper) / 2 };
+    const maxLine = { a: maxSlope, b: (maxRange.lower + maxRange.upper) / 2 };
     const fitSlope = Math.tan((Math.atan(minSlope) + Math.atan(maxSlope)) / 2);
-    const fitRange = feasibleIntercept(points, ux, uy, fitSlope);
+    const deltaSlope = minLine.a - maxLine.a;
+    let fitIntercept;
+    if (Math.abs(deltaSlope) > 1e-12) {
+      const intersectionX = (maxLine.b - minLine.b) / deltaSlope;
+      const intersectionY = minLine.a * intersectionX + minLine.b;
+      fitIntercept = intersectionY - fitSlope * intersectionX;
+    } else {
+      fitIntercept = (minLine.b + maxLine.b) / 2;
+    }
     return {
-      min: { a: minSlope, b: (minRange.lower + minRange.upper) / 2 },
-      max: { a: maxSlope, b: (maxRange.lower + maxRange.upper) / 2 },
-      fit: { a: fitSlope, b: (fitRange.lower + fitRange.upper) / 2 }
+      min: minLine,
+      max: maxLine,
+      fit: { a: fitSlope, b: fitIntercept }
     };
   }
 
@@ -526,17 +624,18 @@
     $('#linear-chart-title').textContent = state.linear.length ? `${yName || ySymbol} ${ySymbol}${yUnit ? ` (in ${yUnit})` : ''} in Abhängigkeit von ${xName || xSymbol} ${xSymbol}${xUnit ? ` (in ${xUnit})` : ''}` : 'Linearer Zusammenhang';
     $('#theory-formula').textContent = `${ySymbol} = a · ${xSymbol} + b`;
     const points = state.linear.filter(pair => pair.every(Number.isFinite));
+    const activePoints = points.filter((_, index) => !state.linearExcluded.has(index));
     const ux = Math.abs(parseNumber($('#x-uncertainty').value)), uy = Math.abs(parseNumber($('#y-uncertainty').value));
     const theoryA = parseNumber($('#theory-a').value), theoryB = parseNumber($('#theory-b').value);
-    const bounds = Number.isFinite(ux) && Number.isFinite(uy) ? slopeBounds(points, ux, uy, theoryA) : null;
+    const bounds = Number.isFinite(ux) && Number.isFinite(uy) ? slopeBounds(activePoints, ux, uy, theoryA) : null;
     state.currentLineResult = bounds;
     if (bounds) {
       $('#slope-min').textContent = formatNumber(bounds.min.a, 6); $('#slope-max').textContent = formatNumber(bounds.max.a, 6);
       $('#fit-equation').textContent = `${ySymbol} = ${formatNumber(bounds.fit.a, 6)} · ${xSymbol} ${bounds.fit.b < 0 ? '−' : '+'} ${formatNumber(Math.abs(bounds.fit.b), 6)}`;
-      $('#line-note').textContent = 'Nutze Diagramm und Geraden für deine eigene fachliche Bewertung.';
+      $('#line-note').textContent = `${activePoints.length} von ${points.length} Datenpunkten berücksichtigt.`;
     } else {
       $('#slope-min').textContent = '–'; $('#slope-max').textContent = '–'; $('#fit-equation').textContent = '–';
-      $('#line-note').textContent = points.length < 2 ? 'Mindestens zwei Datenpaare eingeben.' : 'Für diese Unsicherheitsrechtecke wurde kein gemeinsamer Steigungsbereich gefunden.';
+      $('#line-note').textContent = activePoints.length < 2 ? 'Mindestens zwei nicht ausgeschlossene Datenpaare eingeben.' : 'Für diese Unsicherheitsrechtecke wurde kein gemeinsamer Steigungsbereich gefunden.';
     }
     if (!points.length) drawEmptyChart($('#linear-chart'), 'Noch keine Datenpaare', 'Werte eingeben oder ein Beispiel auswählen.', 620);
     else drawLinearChart(points, ux, uy, theoryA, theoryB, bounds, { xSymbol, xUnit, ySymbol, yUnit });
@@ -557,10 +656,35 @@
     niceTicks(ymin, ymax).forEach(tick => { const py = yScale(tick); svg.append(svgEl('line', { x1: left, y1: py, x2: W - right, y2: py, stroke: '#e5ebe7' })); svg.append(svgEl('text', { x: left - 13, y: py + 5, 'text-anchor': 'end', fill: '#536058', 'font-size': 16 }, formatNumber(tick, 5))); });
     svg.append(svgEl('line', { x1: left, y1: H - bottom, x2: W - right, y2: H - bottom, stroke: '#56635a', 'stroke-width': 2 }));
     svg.append(svgEl('line', { x1: left, y1: top, x2: left, y2: H - bottom, stroke: '#56635a', 'stroke-width': 2 }));
-    points.forEach(([x, y]) => {
+    points.forEach(([x, y], index) => {
+      const excluded = state.linearExcluded.has(index);
       const rx = xScale(x - ux), ry = yScale(y + uy), rw = xScale(x + ux) - rx, rh = yScale(y - uy) - ry;
-      svg.append(svgEl('rect', { x: rx, y: ry, width: Math.max(rw, 2), height: Math.max(rh, 2), fill: 'rgba(5,165,53,.13)', stroke: '#05a535', 'stroke-width': 1.5 }));
-      svg.append(svgEl('circle', { cx: xScale(x), cy: yScale(y), r: 5.5, fill: '#172019' }));
+      svg.append(svgEl('rect', {
+        x: rx, y: ry, width: Math.max(rw, 2), height: Math.max(rh, 2),
+        fill: excluded ? 'rgba(173,181,175,.13)' : 'rgba(5,165,53,.13)',
+        stroke: excluded ? '#adb5af' : '#05a535', 'stroke-width': 1.5
+      }));
+      const point = svgEl('circle', {
+        cx: xScale(x), cy: yScale(y), r: 7,
+        fill: excluded ? '#adb5af' : '#172019',
+        stroke: '#fff', 'stroke-width': 2,
+        tabindex: 0, role: 'button',
+        'aria-label': `Datenpunkt ${index + 1} ${excluded ? 'wieder einbeziehen' : 'ausschließen'}`,
+        style: 'cursor:pointer'
+      });
+      const togglePoint = () => {
+        if (state.linearExcluded.has(index)) state.linearExcluded.delete(index);
+        else state.linearExcluded.add(index);
+        renderLinear();
+      };
+      point.addEventListener('click', togglePoint);
+      point.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          togglePoint();
+        }
+      });
+      svg.append(point);
     });
     const drawLine = (line, color, width, dash = '') => {
       if (!line || !Number.isFinite(line.a) || !Number.isFinite(line.b)) return;
@@ -587,20 +711,20 @@
     const data = examples[id]; if (!data) return;
     [['#x-name', data.x[0]], ['#x-symbol', data.x[1]], ['#x-unit', data.x[2]], ['#y-name', data.y[0]], ['#y-symbol', data.y[1]], ['#y-unit', data.y[2]], ['#x-uncertainty', formatNumber(data.ux)], ['#y-uncertainty', formatNumber(data.uy)], ['#theory-a', formatNumber(data.a)], ['#theory-b', formatNumber(data.b)]].forEach(([selector, value]) => $(selector).value = value);
     [['#x-uncertainty-range', data.ux], ['#y-uncertainty-range', data.uy], ['#theory-a-range', data.a], ['#theory-b-range', data.b]].forEach(([selector, value]) => $(selector).value = String(value));
-    state.linear = data.values; $('#linear-paste').value = data.values.map(pair => pair.map(formatNumber).join('\t')).join('\n');
+    state.linear = data.values; state.linearExcluded.clear(); $('#linear-paste').value = data.values.map(pair => pair.map(formatNumber).join('\t')).join('\n');
     renderLinearTable(); renderLinear();
   }
 
   function setCompareExample(id) {
     const examples = {
       overlap: {
-        a: ['Pendel A', 'T₁', 's', 2.04, .06], b: ['Pendel B', 'T₂', 's', 2.13, .08]
+        a: ['Messreihe A', 'T₁', 's', 2.04, .06], b: ['Messreihe B', 'T₂', 's', 2.13, .08]
       },
       separate: {
-        a: ['Stab A', 'l₁', 'cm', 12.4, .15], b: ['Stab B', 'l₂', 'cm', 13.1, .18]
+        a: ['Messreihe A', 'l₁', 'cm', 12.4, .15], b: ['Messreihe B', 'l₂', 'cm', 13.1, .18]
       },
       precision: {
-        a: ['Messung A', 'U₁', 'V', 5, .5], b: ['Messung B', 'U₂', 'V', 5, .12]
+        a: ['Messreihe A', 'U₁', 'V', 5, .5], b: ['Messreihe B', 'U₂', 'V', 5, .12]
       }
     };
     const data = examples[id]; if (!data) return;
@@ -653,7 +777,7 @@
       const a = parseNumber($('#random-a').value), b = parseNumber($('#random-b').value), spread = Math.abs(parseNumber($('#random-spread').value));
       const ux = Math.abs(parseNumber($('#random-ux').value)), uy = Math.abs(parseNumber($('#random-uy').value));
       if (![a, b, spread, ux, uy].every(Number.isFinite)) return toast('Bitte gültige Werte eingeben.');
-      state.linear = Array.from({ length: n }, (_, i) => { const x = n === 1 ? 0 : i * 10 / (n - 1); return [x, a * x + b + gaussian() * spread]; });
+      state.linear = Array.from({ length: n }, (_, i) => { const x = n === 1 ? 0 : i * 10 / (n - 1); return [x, a * x + b + gaussian() * spread]; }); state.linearExcluded.clear();
       $('#x-name').value = 'x-Größe'; $('#x-symbol').value = 'x'; $('#x-unit').value = ''; $('#y-name').value = 'y-Größe'; $('#y-symbol').value = 'y'; $('#y-unit').value = '';
       $('#x-uncertainty').value = formatNumber(ux); $('#y-uncertainty').value = formatNumber(uy); $('#theory-a').value = formatNumber(a); $('#theory-b').value = formatNumber(b);
       $('#x-uncertainty-range').value = String(ux); $('#y-uncertainty-range').value = String(uy); $('#theory-a-range').value = String(a); $('#theory-b-range').value = String(b);
@@ -726,15 +850,16 @@
     ['#compare-a-label', '#compare-a-symbol', '#compare-a-unit', '#compare-b-label', '#compare-b-symbol', '#compare-b-unit'].forEach(selector => $(selector).addEventListener('input', renderCompare));
     ['a', 'b'].forEach(id => { bindSliderPair(`#compare-${id}-value`, `#compare-${id}-value-range`, renderCompare); bindSliderPair(`#compare-${id}-u`, `#compare-${id}-u-range`, renderCompare); });
     $$('.use-series').forEach(button => button.addEventListener('click', () => { const r = state.currentSeriesResult; if (!r || !Number.isFinite(r.uncertainty)) return toast('Zuerst eine Messreihe auswerten.'); const id = button.dataset.target; $(`#compare-${id}-label`).value = $('#series-name').value; $(`#compare-${id}-symbol`).value = $('#series-symbol').value; $(`#compare-${id}-unit`).value = $('#series-unit').value; $(`#compare-${id}-value`).value = formatNumber(r.center); $(`#compare-${id}-u`).value = formatNumber(r.uncertainty); $(`#compare-${id}-value-range`).value = String(r.center); $(`#compare-${id}-u-range`).value = String(r.uncertainty); renderCompare(); }));
+    $('#compare-reference').addEventListener('input', renderCompare);
     $('#compare-example-button').addEventListener('click', () => openExamples('compare'));
     $('#compare-png').addEventListener('click', () => exportSvgPng($('#compare-chart'), 'messergebnisse-vergleich.png'));
     ['#x-name', '#x-symbol', '#x-unit', '#y-name', '#y-symbol', '#y-unit'].forEach(selector => $(selector).addEventListener('input', renderLinear));
     bindSliderPair('#x-uncertainty', '#x-uncertainty-range', renderLinear); bindSliderPair('#y-uncertainty', '#y-uncertainty-range', renderLinear); bindSliderPair('#theory-a', '#theory-a-range', renderLinear); bindSliderPair('#theory-b', '#theory-b-range', renderLinear);
     ['#show-theory', '#show-bounds', '#show-fit'].forEach(selector => $(selector).addEventListener('change', renderLinear));
-    $('#linear-apply').addEventListener('click', () => { const parsed = parseTableText($('#linear-paste').value); const pairs = parsed.rows.map(row => [row[0], row[1]]).filter(pair => pair.every(Number.isFinite)); if (!pairs.length) return toast('Keine Datenpaare erkannt.'); state.linear = pairs; renderLinearTable(); renderLinear(); });
+    $('#linear-apply').addEventListener('click', () => { const parsed = parseTableText($('#linear-paste').value); const pairs = parsed.rows.map(row => [row[0], row[1]]).filter(pair => pair.every(Number.isFinite)); if (!pairs.length) return toast('Keine Datenpaare erkannt.'); state.linear = pairs; state.linearExcluded.clear(); renderLinearTable(); renderLinear(); });
     $('#linear-add-row').addEventListener('click', () => { const last = state.linear.at(-1) || [0, 0]; state.linear.push([last[0] + 1, last[1]]); renderLinearTable(); renderLinear(); });
     $('#linear-file').addEventListener('change', event => handleFile(event.target.files[0], 'linear'));
-    $('#linear-use-columns').addEventListener('click', () => { const xcol = Number($('#linear-x-column').value), ycol = Number($('#linear-y-column').value); if (xcol === ycol) return toast('Bitte zwei verschiedene Spalten wählen.'); const pairs = state.linearImport.rows.map(row => [row[xcol], row[ycol]]).filter(pair => pair.every(Number.isFinite)); if (!pairs.length) return toast('Keine vollständigen Datenpaare gefunden.'); state.linear = pairs; applyMetadataFromHeader(state.linearImport.headers[xcol], 'x'); applyMetadataFromHeader(state.linearImport.headers[ycol], 'y'); $('#linear-import-map').hidden = true; renderLinearTable(); renderLinear(); });
+    $('#linear-use-columns').addEventListener('click', () => { const xcol = Number($('#linear-x-column').value), ycol = Number($('#linear-y-column').value); if (xcol === ycol) return toast('Bitte zwei verschiedene Spalten wählen.'); const pairs = state.linearImport.rows.map(row => [row[xcol], row[ycol]]).filter(pair => pair.every(Number.isFinite)); if (!pairs.length) return toast('Keine vollständigen Datenpaare gefunden.'); state.linear = pairs; state.linearExcluded.clear(); applyMetadataFromHeader(state.linearImport.headers[xcol], 'x'); applyMetadataFromHeader(state.linearImport.headers[ycol], 'y'); $('#linear-import-map').hidden = true; renderLinearTable(); renderLinear(); });
     $('#linear-example-button').addEventListener('click', () => openExamples('linear'));
     $('#linear-png').addEventListener('click', () => exportSvgPng($('#linear-chart'), 'linearer-zusammenhang.png')); $('#linear-csv').addEventListener('click', linearCsv);
     $('#random-generate').addEventListener('click', event => { event.preventDefault(); generateRandom(); });
@@ -752,11 +877,11 @@
       {
         name: 'set_linear_data', title: 'Lineare Messdaten setzen', description: 'Setzt die sichtbaren x-/y-Datenpaare und die konstanten Unsicherheiten.',
         inputSchema: { type: 'object', properties: { points: { type: 'array', items: { type: 'array', items: { type: 'number' }, minItems: 2, maxItems: 2 }, minItems: 2 }, xUncertainty: { type: 'number', minimum: 0 }, yUncertainty: { type: 'number', minimum: 0 } }, required: ['points'], additionalProperties: false },
-        execute(input) { if (!Array.isArray(input.points) || !input.points.every(p => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite))) throw new Error('points muss Datenpaare enthalten'); state.linear = input.points; if (Number.isFinite(input.xUncertainty)) $('#x-uncertainty').value = formatNumber(input.xUncertainty); if (Number.isFinite(input.yUncertainty)) $('#y-uncertainty').value = formatNumber(input.yUncertainty); renderLinearTable(); renderLinear(); return { count: state.linear.length, bounds: state.currentLineResult }; }
+        execute(input) { if (!Array.isArray(input.points) || !input.points.every(p => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite))) throw new Error('points muss Datenpaare enthalten'); state.linear = input.points; state.linearExcluded.clear(); if (Number.isFinite(input.xUncertainty)) $('#x-uncertainty').value = formatNumber(input.xUncertainty); if (Number.isFinite(input.yUncertainty)) $('#y-uncertainty').value = formatNumber(input.yUncertainty); renderLinearTable(); renderLinear(); return { count: state.linear.length, bounds: state.currentLineResult }; }
       }
     ];
     tools.forEach(tool => { try { Promise.resolve(context.registerTool({ ...tool, annotations: { readOnlyHint: false, untrustedContentHint: false } })).catch(() => {}); } catch (_) {} });
   }
 
-  bindEvents(); renderSeriesTable(); renderSeries(); renderCompare(); renderLinearTable(); renderLinear(); routeFromHash(); registerWebMcp();
+  bindEvents(); setSeriesExample('pendulum'); setCompareExample('overlap'); setLinearExample('ohm'); routeFromHash(); registerWebMcp();
 })();
