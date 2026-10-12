@@ -10,9 +10,23 @@
 </head>
 <body>
   <a class="skip-link" href="#workspace">Zum Inhalt</a>
+ 
   <header class="site-header">
-    <img class="fnw-logo" src="https://www.cd.ovgu.de/cd_media/CD_OVGU/Fakult%C3%A4tsmerkmale%2BAbb_/Logo_Abbildungen/FNW/Signet_FNW_2-height-145-width-621.svg" alt="Logo der Fakultät für Naturwissenschaften" onerror="this.hidden=true">
-    <h1><span>Physikdidaktisches Werkzeug</span><b>–</b> Messdaten-Werkbank</h1>
+    <a
+      class="fnw-logo-link"
+      href="https://www.physikdidaktik.ovgu.de/"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Zur Website der Physikdidaktik der Otto-von-Guericke-Universität Magdeburg"
+    >
+      <img
+        class="fnw-logo"
+        src="https://www.cd.ovgu.de/cd_media/CD_OVGU/Fakult%C3%A4tsmerkmale%2BAbb_/Logo_Abbildungen/FNW/Signet_FNW_2-height-145-width-621.svg"
+        alt="Logo der Fakultät für Naturwissenschaften"
+        onerror="this.hidden=true"
+      >
+    </a>
+    <h1>Messdaten-Werkbank</h1>
   </header>
 
   <main id="workspace">
@@ -23,19 +37,19 @@
       </div>
       <div class="home-grid">
         <a class="home-tile" href="#series">
-          <span class="tile-number">01</span>
+          <span class="tile-number">Teil 1</span>
           <h3>Messreihe analysieren</h3>
           <p>Streuung einer Messreihe mit verschiedenen Unsicherheitsmaßen bestimmen und vergleichen.</p>
           <span class="tile-link">Werkzeug öffnen</span>
         </a>
         <a class="home-tile" href="#compare">
-          <span class="tile-number">02</span>
-          <h3>Messergebnisse vergleichen</h3>
+          <span class="tile-number">Teil 2</span>
+          <h3>Messreihen vergleichen</h3>
           <p>Zwei Bestwerte mit ihren Unsicherheitsintervallen gemeinsam darstellen.</p>
           <span class="tile-link">Werkzeug öffnen</span>
         </a>
         <a class="home-tile" href="#linear">
-          <span class="tile-number">03</span>
+          <span class="tile-number">Teil 3</span>
           <h3>Linearen Zusammenhang untersuchen</h3>
           <p>Messpunkte, Unsicherheitsrechtecke, Theorie- und Grenzgeraden sichtbar machen.</p>
           <span class="tile-link">Werkzeug öffnen</span>
@@ -59,10 +73,10 @@
           <div class="action-row compact">
             <button class="button primary" id="series-example-button">Beispiel auswählen</button>
             <label class="button secondary file-button">CSV/TXT öffnen<input id="series-file" type="file" accept=".csv,.txt,text/csv,text/plain" hidden></label>
-            <button class="button ghost collapse-toggle" data-collapse-target="series-data-content" aria-expanded="true">Daten einklappen</button>
+            <button class="button ghost collapse-toggle" data-collapse-target="series-data-content" aria-expanded="false">Daten ausklappen</button>
           </div>
         </div>
-        <div id="series-data-content" class="collapsible-content">
+        <div id="series-data-content" class="collapsible-content" hidden>
           <div class="meta-grid three">
             <label>Messgröße<input id="series-name" placeholder="z. B. Periodendauer"></label>
             <label>Formelzeichen<input id="series-symbol" placeholder="z. B. T"></label>
@@ -92,7 +106,7 @@
         <section class="card chart-card">
           <div class="card-heading">
             <div><span class="card-kicker">Darstellung</span><h3 id="series-chart-title">Messreihe</h3></div>
-            <div class="action-row compact"><button class="button secondary" id="series-png">PNG</button><button class="button secondary" id="series-csv">CSV</button></div>
+            <div class="action-row compact"><button class="button secondary" id="series-png">als PNG speichern</button><button class="button secondary" id="series-csv">als CSV speichern</button></div>
           </div>
           <svg id="series-chart" class="chart" viewBox="0 0 1000 420" role="img" aria-labelledby="series-chart-title"></svg>
           <p class="chart-hint">Punkt anklicken, um ihn manuell auszuschließen oder wieder einzubeziehen.</p>
@@ -147,20 +161,23 @@
       </div>
       <div class="two-column">
         <section class="card result-input result-a">
-          <div class="card-heading"><div><span class="card-kicker">Ergebnis A</span><h3>Erstes Messergebnis</h3></div><button class="button ghost use-series" data-target="a">Aktuelle Messreihe übernehmen</button></div>
-          <div class="meta-grid three"><label>Bezeichnung<input id="compare-a-label" placeholder="z. B. Pendel A"></label><label>Formelzeichen<input id="compare-a-symbol" placeholder="z. B. T₁"></label><label>Einheit<input id="compare-a-unit" placeholder="z. B. s"></label></div>
-          <div class="slider-field"><label>Bestwert<input id="compare-a-value" type="text" inputmode="decimal" placeholder="0,00"></label><input id="compare-a-value-range" type="range" min="-100" max="100" value="0" step="0.1" aria-label="Bestwert A einstellen"></div>
-          <div class="slider-field"><label>Unsicherheit<input id="compare-a-u" type="text" inputmode="decimal" placeholder="0,00"></label><input id="compare-a-u-range" type="range" min="0" max="50" value="0" step="0.1" aria-label="Unsicherheit A einstellen"></div>
+          <div class="card-heading"><div><span class="card-kicker">Messreihe A</span><h3>Erste Messreihe</h3></div><button class="button ghost use-series" data-target="a">Aktuelle Messreihe übernehmen</button></div>
+          <div class="meta-grid three"><label>Bezeichnung<input id="compare-a-label" placeholder="z. B. Messreihe A"></label><label>Formelzeichen<input id="compare-a-symbol" placeholder="z. B. T₁"></label><label>Einheit<input id="compare-a-unit" placeholder="z. B. s"></label></div>
+          <div class="slider-field"><label>Bestwert<input id="compare-a-value" type="text" inputmode="decimal" placeholder="0,00"></label><input id="compare-a-value-range" type="range" min="-20" max="20" value="0" step="0.05" aria-label="Bestwert A einstellen"></div>
+          <div class="slider-field"><label>Unsicherheit<input id="compare-a-u" type="text" inputmode="decimal" placeholder="0,00"></label><input id="compare-a-u-range" type="range" min="0" max="2" value="0" step="0.01" aria-label="Unsicherheit A einstellen"></div>
         </section>
         <section class="card result-input result-b">
-          <div class="card-heading"><div><span class="card-kicker">Ergebnis B</span><h3>Zweites Messergebnis</h3></div><button class="button ghost use-series" data-target="b">Aktuelle Messreihe übernehmen</button></div>
-          <div class="meta-grid three"><label>Bezeichnung<input id="compare-b-label" placeholder="z. B. Pendel B"></label><label>Formelzeichen<input id="compare-b-symbol" placeholder="z. B. T₂"></label><label>Einheit<input id="compare-b-unit" placeholder="z. B. s"></label></div>
-          <div class="slider-field"><label>Bestwert<input id="compare-b-value" type="text" inputmode="decimal" placeholder="0,00"></label><input id="compare-b-value-range" type="range" min="-100" max="100" value="0" step="0.1" aria-label="Bestwert B einstellen"></div>
-          <div class="slider-field"><label>Unsicherheit<input id="compare-b-u" type="text" inputmode="decimal" placeholder="0,00"></label><input id="compare-b-u-range" type="range" min="0" max="50" value="0" step="0.1" aria-label="Unsicherheit B einstellen"></div>
+          <div class="card-heading"><div><span class="card-kicker">Messreihe B</span><h3>Zweite Messreihe</h3></div><button class="button ghost use-series" data-target="b">Aktuelle Messreihe übernehmen</button></div>
+          <div class="meta-grid three"><label>Bezeichnung<input id="compare-b-label" placeholder="z. B. Messreihe B"></label><label>Formelzeichen<input id="compare-b-symbol" placeholder="z. B. T₂"></label><label>Einheit<input id="compare-b-unit" placeholder="z. B. s"></label></div>
+          <div class="slider-field"><label>Bestwert<input id="compare-b-value" type="text" inputmode="decimal" placeholder="0,00"></label><input id="compare-b-value-range" type="range" min="-20" max="20" value="0" step="0.05" aria-label="Bestwert B einstellen"></div>
+          <div class="slider-field"><label>Unsicherheit<input id="compare-b-u" type="text" inputmode="decimal" placeholder="0,00"></label><input id="compare-b-u-range" type="range" min="0" max="2" value="0" step="0.01" aria-label="Unsicherheit B einstellen"></div>
         </section>
       </div>
       <section class="card chart-card">
-        <div class="card-heading"><div><span class="card-kicker">Darstellung</span><h3>Unsicherheitsintervalle</h3></div><button class="button secondary" id="compare-png">Diagramm als PNG</button></div>
+        <div class="card-heading"><div><span class="card-kicker">Darstellung</span><h3>Unsicherheitsintervalle</h3></div><button class="button secondary" id="compare-png">als PNG speichern</button></div>
+        <div class="meta-grid">
+          <label>Literaturwert / Referenzwert (optional)<input id="compare-reference" type="text" inputmode="decimal" placeholder="z. B. 7,86"></label>
+        </div>
         <svg id="compare-chart" class="chart compare-chart" viewBox="0 0 1000 360" role="img" aria-label="Vergleich zweier Unsicherheitsintervalle"></svg>
         <div class="result-equations"><strong id="compare-a-result">–</strong><strong id="compare-b-result">–</strong></div>
       </section>
@@ -175,9 +192,9 @@
       <section class="card data-card full-width-card">
         <div class="card-heading">
           <div><span class="card-kicker">Datenpaare</span><h3>x- und y-Werte</h3></div>
-          <div class="action-row compact"><button class="button primary" id="linear-example-button">Beispiel auswählen</button><label class="button secondary file-button">CSV/TXT öffnen<input id="linear-file" type="file" accept=".csv,.txt,text/csv,text/plain" hidden></label><button class="button ghost collapse-toggle" data-collapse-target="linear-data-content" aria-expanded="true">Daten einklappen</button></div>
+          <div class="action-row compact"><button class="button primary" id="linear-example-button">Beispiel auswählen</button><label class="button secondary file-button">CSV/TXT öffnen<input id="linear-file" type="file" accept=".csv,.txt,text/csv,text/plain" hidden></label><button class="button ghost collapse-toggle" data-collapse-target="linear-data-content" aria-expanded="false">Daten ausklappen</button></div>
         </div>
-        <div id="linear-data-content" class="collapsible-content">
+        <div id="linear-data-content" class="collapsible-content" hidden>
           <div class="axis-meta">
             <fieldset><legend>x-Achse</legend><div class="meta-grid three"><label>Messgröße<input id="x-name" placeholder="z. B. Spannung"></label><label>Formelzeichen<input id="x-symbol" placeholder="z. B. U"></label><label>Einheit<input id="x-unit" placeholder="z. B. V"></label></div></fieldset>
             <fieldset><legend>y-Achse</legend><div class="meta-grid three"><label>Messgröße<input id="y-name" placeholder="z. B. Stromstärke"></label><label>Formelzeichen<input id="y-symbol" placeholder="z. B. I"></label><label>Einheit<input id="y-unit" placeholder="z. B. mA"></label></div></fieldset>
@@ -195,20 +212,20 @@
 
       <div class="workbench-grid linear-workbench">
         <section class="card chart-card">
-          <div class="card-heading"><div><span class="card-kicker">Diagramm</span><h3 id="linear-chart-title">Linearer Zusammenhang</h3></div><div class="action-row compact"><button class="button secondary" id="linear-png">PNG</button><button class="button secondary" id="linear-csv">CSV</button></div></div>
+          <div class="card-heading"><div><span class="card-kicker">Diagramm</span><h3 id="linear-chart-title">Linearer Zusammenhang</h3></div><div class="action-row compact"><button class="button secondary" id="linear-png">als PNG speichern</button><button class="button secondary" id="linear-csv">als CSV speichern</button></div></div>
           <svg id="linear-chart" class="chart linear-chart" viewBox="0 0 1000 620" role="img" aria-labelledby="linear-chart-title"></svg>
           <div class="legend"><span><i class="rect-key"></i>Unsicherheitsbereich</span><span><i class="line theory"></i>Theorie</span><span><i class="line bounds"></i>Grenzgeraden</span><span><i class="line fit"></i>Winkelhalbierende</span></div>
         </section>
 
         <aside class="card control-card">
           <div class="card-heading"><div><span class="card-kicker">Darstellung</span><h3>Unsicherheiten und Geraden</h3></div></div>
-          <div class="slider-field"><label>x-Unsicherheit<input id="x-uncertainty" type="text" inputmode="decimal" placeholder="0,00"></label><input id="x-uncertainty-range" type="range" min="0" max="10" value="0" step="0.01" aria-label="x-Unsicherheit einstellen"></div>
-          <div class="slider-field"><label>y-Unsicherheit<input id="y-uncertainty" type="text" inputmode="decimal" placeholder="0,00"></label><input id="y-uncertainty-range" type="range" min="0" max="10" value="0" step="0.01" aria-label="y-Unsicherheit einstellen"></div>
+          <div class="slider-field"><label>x-Unsicherheit<input id="x-uncertainty" type="text" inputmode="decimal" value="0" placeholder="0,00"></label><input id="x-uncertainty-range" type="range" min="0" max="2" value="0" step="0.01" aria-label="x-Unsicherheit einstellen"></div>
+          <div class="slider-field"><label>y-Unsicherheit<input id="y-uncertainty" type="text" inputmode="decimal" value="0" placeholder="0,00"></label><input id="y-uncertainty-range" type="range" min="0" max="5" value="0" step="0.01" aria-label="y-Unsicherheit einstellen"></div>
           <div class="section-rule"></div>
           <div class="subheading-row"><h4>Lineare Theorie</h4><button class="help-dot" data-help="theory" aria-label="Hilfe zur Theoriegeraden">?</button></div>
           <div class="formula-box"><span id="theory-formula">y = a · x + b</span></div>
-          <div class="slider-field"><label>Steigung a<input id="theory-a" type="text" inputmode="decimal" placeholder="0,0"></label><input id="theory-a-range" type="range" min="-20" max="20" value="0" step="0.1" aria-label="Steigung einstellen"></div>
-          <div class="slider-field"><label>Achsenabschnitt b<input id="theory-b" type="text" inputmode="decimal" placeholder="0,0"></label><input id="theory-b-range" type="range" min="-50" max="50" value="0" step="0.1" aria-label="Achsenabschnitt einstellen"></div>
+          <div class="slider-field"><label>Steigung a<input id="theory-a" type="text" inputmode="decimal" value="0" placeholder="0,0"></label><input id="theory-a-range" type="range" min="-12" max="12" value="0" step="0.05" aria-label="Steigung einstellen"></div>
+          <div class="slider-field"><label>Achsenabschnitt b<input id="theory-b" type="text" inputmode="decimal" value="0" placeholder="0,0"></label><input id="theory-b-range" type="range" min="-10" max="10" value="0" step="0.05" aria-label="Achsenabschnitt einstellen"></div>
           <div class="line-toggles">
             <label class="choice"><input id="show-theory" type="checkbox" checked> Theoriegerade</label>
             <label class="choice"><input id="show-bounds" type="checkbox" checked> Grenzgeraden</label>
@@ -224,7 +241,7 @@
     </section>
   </main>
 
-  <footer><span>Messdaten-Werkbank · vollständig lokale Datenverarbeitung im Browser</span><span>&#169 2026 · Lukas Mientus</span></footer>
+<footer><span>Fachliche Grundlage: <a href="https://depositonce.tu-berlin.de/items/b46e0483-17de-47d1-9598-16bcf353a096" target="_blank" rel="noopener noreferrer"> Messunsicherheiten im Physikunterricht</a></span><span>&copy; 2026 · Lukas Mientus</span></footer>
 
   <dialog id="example-dialog"><form method="dialog" class="dialog-card"><div class="card-heading"><div><span class="card-kicker">Datensatz laden</span><h3 id="example-title">Beispiele</h3></div><button class="icon-button" value="cancel" aria-label="Dialog schließen">×</button></div><div id="example-options" class="example-grid"></div></form></dialog>
   <dialog id="help-dialog"><form method="dialog" class="dialog-card help-card"><div class="card-heading"><div><span class="card-kicker">Kurz erklärt</span><h3 id="help-title">Hilfe</h3></div><button class="icon-button" value="cancel" aria-label="Dialog schließen">×</button></div><div id="help-content"></div><button class="button primary" value="ok">Verstanden</button></form></dialog>
